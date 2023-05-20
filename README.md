@@ -34,27 +34,29 @@ $debug = new debug($debugSettings);
 ## Settings
 You can pass an array to set a lot of things
 
+The default values are intended for balance between useful loggin, and security towards web clients
+
 
 | Key | | Type | Default | Description |
 |-|-|-|-|-|
-| `enabled` | | boolean | true | 
-| `redact` | | array | | keys that will be searched for in `data` array and values redacted |
-| `log` || array | | |
-|| `logLevel` | integer | 1 | messages of this level or lower will be sent to the log destinations (file and syslog) |
-|| `logToFile` | boolean | false | send messages to file? |
-|| `logFile` | string | /var/log/myapp.log | path to log output file |
-|| `logToSyslog` | boolean | false | send log messages to syslog? |
-|| `syslogName` | string | GNU STP | app name registered with syslog |
-|| `syslogFacility` | integer | LOG_LOCAL0 | the source registered for syslog |
-| `debug` || array |  |
-|| `debugLevel` | integer | 4 | this level and lower will be sent to debug destinations (JS console or CLI) |
-|| `storeMessages` | boolean | false | suppress debug output and store messages into a buffer. If not explicitly set, the auto-detect for ajax requests will set this to `true`
-| `dump` || array |  |
-|| `dumpObeysEnabled` | boolean | true | if false, dumps will always be outputted. otherwise, it will obey the `enabled` option |
-|| `dumpObeysStoreMessages` | boolean | true | set whether dumps will be stored in the message buffer according to `['debug']['storeMessages']` |
-|| `dumpObeysRedact` | boolean | true | if false, nothing will be redacted. Otherwise, redactions will be enabled |
-| `php` || array |  |
-|| `handlePhpErrors` | boolean | true | should PHP errors be handled using this |
+| `enabled` | boolean | true | 
+| `redact` | array | | keys that will be searched for in `data` array and values redacted |
+| `logLevel` | integer | 1 | messages of this level or lower will be sent to the log destinations (file and syslog) |
+| `logToFile` | boolean | false | send messages to file? |
+| `logFile` | string | /var/log/myapp.log | path to log output file |
+| `logToSyslog` | boolean | false | send log messages to syslog? |
+| `syslogName` | string | GNU STP | app name registered with syslog |
+| `syslogFacility` | integer | LOG_LOCAL0 | the source registered for syslog |
+| `debugLevel` | integer | 0 | this level and lower will be sent to debug destinations (JS console or CLI) |
+| `storeMessages` | boolean | false | suppress debug output and store messages into a buffer. If not explicitly set, the auto-detect for ajax requests will set this to `true`
+| `dumpObeysEnabled` | boolean | true | if false, dumps will always be outputted. otherwise, it will obey the `enabled` option |
+| `dumpObeysStoreMessages` | boolean | true | set whether dumps will be stored in the message buffer according to `['debug']['storeMessages']` |
+| `dumpObeysRedact` | boolean | true | if false, nothing will be redacted. Otherwise, redactions will be enabled |
+| `handlePhpErrors` | boolean | true | should PHP errors be handled using this |
+| `phpLevel` | int | 4 | Level of php errors to intercept (currently nothin is classed below warning) |
+| `phpToLog` | boolean | true | php errors to log destinations? |
+| `phpToDebug` | boolean | false | php errors to debug destinations? |
+| `hidePhpData` | boolean | true | Will hide file, line and context when output to JS console (because security)
 
 ## Example
 ```php

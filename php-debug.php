@@ -18,15 +18,15 @@ class debug {
         'enabled'=>true,
         'redact'=>array(),
         'log'=> array(
-            'logLevel'=>1,
+            'logLevel'=>2,
             'logToFile'=>false,
             'logFile'=>'/var/log/php-debug.log',
-            'logToSyslog'=>false,
+            'logToSyslog'=>true,
             'syslogName'=>'GNU STP',
-            'syslogFacility'=>LOG_LOCAL0
+            'syslogFacility'=>LOG_LOCAL0,
         ),
         'debug'=> array(
-            'debugLevel'=>4,
+            'debugLevel'=>0,
             'storeMessages'=>false
         ),
         'dump'=> array(
@@ -36,7 +36,10 @@ class debug {
         ),
         'php' => array(
             'handlePhpErrors'=>true,
-            'level'=>4,
+            'phpLevel'=>4,
+            'phpToLog'=>true,
+            'phpToDebug'=>false,
+            'hidePhpData'=>true
         ),
     );
     private $environment = array(
@@ -133,9 +136,7 @@ class debug {
                 unset($tmpLookup);
             }
             if(is_int($newSettings['logLevel'])) {
-                if($newSettings['logLevel'] < 1) {
-                    $newSettings['logLevel'] = 1;
-                } elseif ($newSettings['logLevel'] > 4) {
+                if ($newSettings['logLevel'] > 4) {
                     $newSettings['logLevel'] = 4;
                 }
             }
@@ -148,9 +149,7 @@ class debug {
                 unset($tmpLookup);
             }
             if(is_int($newSettings['debugLevel'])) {
-                if($newSettings['debugLevel'] < 1) {
-                    $newSettings['debugLevel'] = 1;
-                } elseif ($newSettings['debugLevel'] > 4) {
+                if ($newSettings['debugLevel'] > 4) {
                     $newSettings['debugLevel'] = 4;
                 }
             }
@@ -198,7 +197,7 @@ class debug {
         unset($toStore);
         
         // php
-        $toStore = array('handlePhpErrors', 'level');
+        $toStore = array('handlePhpErrors','phpLevel', 'phpToLog', 'phpToDebug','hidePhpData');
         foreach($toStore as $settingToSet) {
             if (isset($newSettings[$settingToSet])) {
                 $this->settings['php'][$settingToSet] = $newSettings[$settingToSet];
@@ -510,7 +509,7 @@ class debug {
         $levelInt = $this->lookup['levelStrToInt'][$levelStr];
 
         // if over what we're logging, return
-        if($levelInt > $this->settings['php']['level']) {
+        if($levelInt > $this->settings['php']['phpLevel']) {
             return;
         }
 
@@ -614,10 +613,31 @@ class debug {
         //
         // test if new message should be output to log outputs (syslog and file) based on $levelInt and $logLevel
         //
+        $toSylog = false;
+        $toFile = false;
+        
         if($levelInt <= $this->settings['log']['logLevel']) {
-            if ($this->settings['log']['logToFile'] == true) $this->output_file($currentMessage);
-            if ($this->settings['log']['logToSyslog'] == true) $this->output_syslog($currentMessage);
+            if(array_key_exists('php', $currentMessage['additional'])) {
+                if($this->settings['php']['phpToLog'] == true) {
+                    if($this->settings['log']['logToFile'] == true) $toFile = true;
+                    if($this->settings['log']['logToSyslog'] == true) $toSyslog = true;
+                }
+            } else {
+                if ($this->settings['log']['logToFile'] == true) $toFile = true;
+                if ($this->settings['log']['logToSyslog'] == true) $toSyslog = true;
+            }
         }
+
+        if($toFile == true) {
+            $this->output_file($currentMessage);
+        }
+        if($toSyslog == true) {
+            $this->output_syslog($currentMessage);
+        }
+
+        unset($toFile);
+        unset($toSyslog);
+
 
         //
         // if storeMessages is true, return (we dont want debug output)
@@ -630,13 +650,30 @@ class debug {
         //
         // test if new message should be output to debug outputs (cli and js), based on $levelInt and $debugLevel
         //
+        $toCli = false;
+        $toJs = false;
+
         if ($levelInt <= $this->settings['debug']['debugLevel']) {
-            if($this->environment['sapi'] == 'cli') {
-                $this->output_cli($currentMessage);
+            if(array_key_exists('php', $currentMessage['additional'])) {
+                if($this->settings['php']['phpToDebug'] == true) {
+                    if($this->environment['sapi'] == 'cli') $toCli = true;
+                    if($this->environment['sapi'] == 'web') $toJs = true;
+                }
             } else {
-                $this->output_js($currentMessage);
+                if($this->environment['sapi'] == 'cli') $toCli = true;
+                if($this->environment['sapi'] == 'web') $toJs = true;
             }
         }
+
+        if($toCli == true) {
+            $this->output_cli($currentMessage);
+        }
+        if($toJs == true) {
+            $this->output_js($currentMessage);
+        }
+
+        unset($toCli);
+        unset($toJs);
 
         //
         // all done
@@ -659,6 +696,13 @@ class debug {
 
         // level to string
         $levelStr = $this->lookup['levelIntToStr'][$wholeMessage['level']];
+
+        // if php and hideData is true, unset data
+        if(array_key_exists('php', $wholeMessage['additional'])) {
+            if($this->settings['php']['hideData'] == true) {
+                unset($wholeMessage['data']);
+            }
+        }
 
         //
         // get console method
