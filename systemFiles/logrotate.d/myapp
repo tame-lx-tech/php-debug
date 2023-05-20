@@ -1,0 +1,7 @@
+/var/log/myapp.log {
+    weekly
+    rotate 4
+    size 10M
+    compress
+    delaycompress
+}
